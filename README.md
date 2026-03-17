@@ -27,6 +27,7 @@ Deliver an integrated decision-support + data Science/Data Analytics prototype f
 | `JupyterNotebooks/usgs-earthquakes-sync.ipynb` | Pull recent USGS earthquake events for PR-focused filtering and export local outputs. | Optional (`USE_ARCGIS=1`) |
 | `JupyterNotebooks/usgs-water-sync.ipynb` | Pull USGS daily water observations (OGC API), normalize with codetables, and export tabular/geospatial outputs. | Optional (`USE_ARCGIS=1`) |
 | `JupyterNotebooks/census-risk-features-pr.ipynb` | Build PR demographic risk features (municipio, ZIP/ZCTA, and town coordinates) from Census APIs. | Not required |
+| `JupyterNotebooks/index_pipeline/02_feature_engineering/15_build_terrain_features_pr.ipynb` | Build municipio-aligned terrain indicators from local DEM, coastal, soil, land-cover, and optional stream inputs with graceful fallbacks when optional datasets are absent. | Not required |
 | `JupyterNotebooks/noaa-pr-waterlevel-hydrograph.ipynb` | Build a resilient, algorithmic PR NOAA water-level workflow (live catalog, no hardwired station dependency) and export comprehensive products: `outputs/noaa_pr/noaa_pr_waterlevel_comprehensive.html`, `outputs/noaa_pr/noaa_pr_water_levels_timeseries.csv`, `outputs/noaa_pr/noaa_pr_station_summary.csv`. | Not required |
 
 **Execution Notes**
@@ -34,6 +35,7 @@ Deliver an integrated decision-support + data Science/Data Analytics prototype f
 - ArcGIS publishing/sync is enabled only when `USE_ARCGIS=1` plus the corresponding layer ID environment variable is set.
 - GitHub Pages publishes from `index.html`, which redirects to `noaa_pr_waterlevel_comprehensive.html`.
 - Most pipeline outputs are written to local `outputs/` folders under `JupyterNotebooks/` unless intentionally promoted for publication.
+- Terrain Feature Pack v1 stages local inputs under `data/staging/terrain/` and writes local reviewable outputs to `outputs/index_pipeline/15_terrain/`.
 
 ## Repository Tree
 
@@ -70,6 +72,14 @@ For a docs-only breakdown, see `docs/README.md`.
 - It centralizes bounds, weights, alert mappings, threshold bands, phase rules, spatial aggregation settings, and confidence scoring factors.
 - Intended use: notebooks in `JupyterNotebooks/index_pipeline/` load this file instead of hardcoding scoring logic constants in multiple places.
 - Outcome: consistent runs, easier audits, simpler tuning, and cleaner semester-to-semester handoff.
+
+## Terrain Feature Pack v1
+
+- `docs/specs/terrain_feature_pack_v1.md` defines the terrain feature scope, formulas, source strategy, CRS assumptions, limitations, and downstream integration guidance.
+- `config/terrain_spec_v1.yaml` versions terrain source globs, feature parameters, quality scoring, and output defaults.
+- `JupyterNotebooks/index_pipeline/02_feature_engineering/15_build_terrain_features_pr.ipynb` is the local-first terrain stage wrapper.
+- `scripts/terrain/terrain_feature_pack.py` contains the reusable Python implementation for notebook or CLI execution.
+- Intended outputs: `outputs/index_pipeline/15_terrain/municipio_terrain_features.{csv,parquet,geojson}` plus run metadata and a local data dictionary.
 
 ## Index Formula Overview (`JupyterNotebooks/index_pipeline/`)
 

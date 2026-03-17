@@ -9,6 +9,7 @@ This folder is organized by category to keep research, design, planning, and ope
   - Current key files:
     - `docs/specs/Index_Spec_v1.md`
     - `docs/specs/findings_to_index_implementation_playbook.md`
+    - `docs/specs/terrain_feature_pack_v1.md`
 
 - `docs/research/`
   - Research prompt stacks, literature review prompts, and question-tracking logs.
