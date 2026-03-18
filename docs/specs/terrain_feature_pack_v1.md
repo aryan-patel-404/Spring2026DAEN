@@ -58,11 +58,11 @@ Implementation may include additional helper fields such as `municipio_key`.
 | Theme | Preferred Source | Retrieval Mode | v1 Handling |
 | --- | --- | --- | --- |
 | Municipio boundaries | Census TIGER county boundaries filtered to Puerto Rico (`STATEFP=72`) | Script-retrievable | Automated fetch if local file absent |
-| DEM / elevation | USGS 3DEP or NOAA DEM GeoTIFF | Usually manual download | Local-file discovery via config globs |
-| Streams | Local NHD or equivalent hydrography vector | Manual or project-provided | Optional local vector input |
-| Coastal inundation | NOAA Sea Level Rise Viewer rasters or polygons | Usually manual download | Optional local raster/polygon input |
-| Soil runoff potential | gSSURGO / SSURGO-derived local layers | Usually manual download | Optional local vector/raster input |
-| Land cover runoff modifier | NOAA C-CAP or equivalent raster | Manual download | Optional local raster input |
+| DEM / elevation | USGS 3DEP or NOAA DEM GeoTIFF / IMG | Usually manual download | Local-file discovery via config globs, recursive raster discovery |
+| Streams | Local NHD or equivalent hydrography vector | Manual or project-provided | Optional local vector input with support for `.gpkg`, `.geojson`, `.shp`, `.zip`, and `.gdb` |
+| Coastal inundation | NOAA Sea Level Rise Viewer rasters or polygons | Usually manual download | Optional local raster/vector input with support for `.tif`, `.img`, `.gpkg`, `.geojson`, `.shp`, `.zip`, and `.gdb` |
+| Soil runoff potential | gSSURGO / SSURGO-derived local layers | Usually manual download | Optional local vector/raster input, including common FileGDB packaging |
+| Land cover runoff modifier | NOAA C-CAP or equivalent raster | Manual download | Optional local raster input with auto-detection for C-CAP and NLCD-style class codes |
 
 ## Local Data Discovery
 
@@ -82,6 +82,8 @@ Expected subfolders:
 - `data/staging/terrain/land_cover/`
 
 The implementation does not hardcode user-specific paths. It resolves relative glob patterns from the repo root.
+
+The guided notebook also exposes a source-inventory step before execution so users can confirm which files were discovered and which remaining steps are still manual.
 
 ## CRS Assumptions
 
@@ -206,11 +208,21 @@ Fully or mostly script-retrievable in v1:
 
 Expected manual/local download in v1:
 
-- DEM GeoTIFFs from USGS 3DEP or NOAA DEM sources
+- DEM GeoTIFF or IMG tiles from USGS 3DEP or NOAA DEM sources
 - NOAA SLR coastal rasters/polygons
 - gSSURGO / SSURGO soil data
-- NOAA C-CAP land cover rasters
+- NOAA C-CAP or NLCD Puerto Rico land-cover rasters
 - project-approved stream vectors if not already curated
+
+Automation added to reduce friction in v1:
+
+- automatic staging-folder creation
+- recursive source discovery beneath each terrain subfolder
+- zipped shapefile support
+- FileGDB support for common hydrography and soil deliveries
+- raster IMG support for common NOAA/USGS downloads
+- land-cover mapping profile auto-detection
+- `inspect_terrain_inputs()` and notebook inspection cells for pre-run validation
 
 ## Example Future Integration
 
@@ -227,8 +239,9 @@ This example is documented for future integration but is not automatically inser
 - Wetness is a simplified terrain proxy, not a full hydrologic routing model
 - Distance-to-stream is centroid-based in v1
 - Coastal metrics depend heavily on local availability of NOAA inundation products
-- Soil and land-cover quality depend on local source currency and coverage
+- Soil and land-cover quality depend on local source currency, schema, and coverage
 - DEM resolution and datum differences can materially affect slope and relief results
+- Some portals still require manual user-driven download choices even though the notebook can now auto-discover and read more of the resulting files
 
 ## Definition of Done
 
