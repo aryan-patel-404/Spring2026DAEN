@@ -1,6 +1,7 @@
 # Spring 2026 DAEN — Flood Early Warning Decision-Support MVP
 
 **Official Repository:** [`yagaC64/Spring2026DAEN`](https://github.com/yagaC64/Spring2026DAEN)
+**Live Dashboard:** [`yagac64.github.io/Spring2026DAEN`](https://yagac64.github.io/Spring2026DAEN/)
 
 **Purpose**
 Deliver an integrated decision-support + data Science/Data Analytics prototype for community flood early warning by turning public data into actionable, defensible insights. The MVP emphasizes a reusable Data-as-a-Service foundation and a mobile-friendly web dashboard (not a native app).
@@ -18,6 +19,14 @@ Deliver an integrated decision-support + data Science/Data Analytics prototype f
 - Web dashboard optimized for phone browsers
 - Demo-ready storytelling for stakeholders
 
+**Quick Local Start**
+- After cloning, run `./run.sh up` for the fastest local prototype startup path.
+- That workflow creates or reuses a repo-local Python virtual environment at `.venv`, checks and installs the baseline requirements, runs pytest smoke tests, rebuilds the local DuckDB baseline, and starts the local Streamlit prototype.
+- `./run.sh` without arguments opens an interactive menu for the same workflow plus status, query, and stop utilities.
+- After startup, the runner can offer to open the local app in the default browser automatically. Inside the Streamlit app, a `Quit Local App` button is available for clean local shutdown.
+- To stop the local app cleanly and free port `8501` for other tools, run `./run.sh stop`. If you need a different port, set `STREAMLIT_PORT` before launch.
+- This baseline uses a standard repo-local Python virtual environment, not `uv`. That is intentional here: it keeps the setup lightweight, explicit, and compatible with the current notebook-first repo style.
+
 **Notebook Catalog**
 | Notebook | Purpose | ArcGIS Dependency |
 | --- | --- | --- |
@@ -26,12 +35,50 @@ Deliver an integrated decision-support + data Science/Data Analytics prototype f
 | `JupyterNotebooks/usgs-earthquakes-sync.ipynb` | Pull recent USGS earthquake events for PR-focused filtering and export local outputs. | Optional (`USE_ARCGIS=1`) |
 | `JupyterNotebooks/usgs-water-sync.ipynb` | Pull USGS daily water observations (OGC API), normalize with codetables, and export tabular/geospatial outputs. | Optional (`USE_ARCGIS=1`) |
 | `JupyterNotebooks/census-risk-features-pr.ipynb` | Build PR demographic risk features (municipio, ZIP/ZCTA, and town coordinates) from Census APIs. | Not required |
+| `JupyterNotebooks/index_pipeline/02_feature_engineering/15_build_terrain_features_pr.ipynb` | Guided terrain workflow for Puerto Rico: inspect discovered sources, stage manual downloads, and build municipio-aligned terrain indicators from DEM, coastal, soil, land-cover, and optional stream inputs with graceful fallbacks. | Not required |
 | `JupyterNotebooks/noaa-pr-waterlevel-hydrograph.ipynb` | Build a resilient, algorithmic PR NOAA water-level workflow (live catalog, no hardwired station dependency) and export comprehensive products: `outputs/noaa_pr/noaa_pr_waterlevel_comprehensive.html`, `outputs/noaa_pr/noaa_pr_water_levels_timeseries.csv`, `outputs/noaa_pr/noaa_pr_station_summary.csv`. | Not required |
 
 **Execution Notes**
 - Default mode is local (no ArcGIS account required).
 - ArcGIS publishing/sync is enabled only when `USE_ARCGIS=1` plus the corresponding layer ID environment variable is set.
-- Most outputs are written to local `outputs/` folders under `JupyterNotebooks/`.
+- GitHub Pages publishes from `index.html`, which redirects to `noaa_pr_waterlevel_comprehensive.html`.
+- Most pipeline outputs are written to local `outputs/` folders under `JupyterNotebooks/` unless intentionally promoted for publication.
+- Terrain Feature Pack v1 stages local inputs under `data/staging/terrain/` and writes local reviewable outputs to `outputs/index_pipeline/15_terrain/`.
+- The terrain CLI supports pre-run inspection with `python3 scripts/terrain/terrain_feature_pack.py --inspect-only` so users can see what was discovered before running the full stage.
+
+## Repository Tree
+
+```text
+.
+├── app/                                # Local Streamlit prototype shell
+├── .github/workflows/                  # GitHub Pages deployment workflow
+├── config/                             # Versioned executable configuration
+├── data/                               # Local/project data staging
+│   └── local/duckdb/                   # Local DuckDB starter baseline artifacts
+├── docs/
+│   ├── meetings/                       # Approved publishable meeting records
+│   ├── planning/                       # Scope, requirements, and planning docs
+│   ├── research/                       # Research stacks and question banks
+│   └── specs/                          # Index specs and implementation playbooks
+├── JupyterNotebooks/
+│   ├── index_pipeline/                 # Staged index/scoring notebook pipeline
+│   ├── *.ipynb                         # Source ingest and analysis notebooks
+│   └── outputs/                        # Local/generated notebook outputs
+├── noaa_pr_waterlevel_comprehensive.html  # Published dashboard artifact
+├── index.html                          # GitHub Pages landing redirect
+├── outputs/                            # Local/generated exports and artifacts
+├── run.sh                              # Local DuckDB + Streamlit prototype runner
+├── scripts/                            # Reusable local pipeline/support scripts
+├── sql/                                # Sample DuckDB baseline queries
+├── sources/
+│   ├── HUMINT/
+│   ├── IMINT/
+│   ├── MASINT/
+│   └── OSINT/
+└── README.md
+```
+
+For a docs-only breakdown, see `docs/README.md`.
 
 ## Index Configuration Skeleton (Executable Spec)
 
@@ -40,7 +87,116 @@ Deliver an integrated decision-support + data Science/Data Analytics prototype f
 - Intended use: notebooks in `JupyterNotebooks/index_pipeline/` load this file instead of hardcoding scoring logic constants in multiple places.
 - Outcome: consistent runs, easier audits, simpler tuning, and cleaner semester-to-semester handoff.
 
-## Index Formula Overview (`PR-Risk-and-Resiliency/JupyterNotebooks/index_pipeline/`)
+## Terrain Feature Pack v1
+
+- `docs/specs/terrain_feature_pack_v1.md` defines the terrain feature scope, formulas, source strategy, CRS assumptions, limitations, and downstream integration guidance.
+- `config/terrain_spec_v1.yaml` versions terrain source globs, feature parameters, quality scoring, and output defaults.
+- `JupyterNotebooks/index_pipeline/02_feature_engineering/15_build_terrain_features_pr.ipynb` is the guided local-first terrain stage notebook for inspection, pacing, and execution.
+- `scripts/terrain/terrain_feature_pack.py` contains the reusable Python implementation for notebook or CLI execution.
+- Current automation focuses on source discovery, staging-folder setup, support for `.zip` / `.gdb` / `.img` local inputs, and land-cover profile auto-detection.
+- Intended outputs: `outputs/index_pipeline/15_terrain/municipio_terrain_features.{csv,parquet,geojson}` plus run metadata and a local data dictionary.
+
+## DuckDB + Streamlit Starter Baseline (Local Prototype)
+
+### Current State
+
+This repository is currently not centered on a formal DuckDB database layer or a deployed Streamlit application. The current MVP remains notebook-first, local-first by default, driven by curated public-data ingest and staged analytics notebooks, and publicly surfaced through the existing GitHub Pages dashboard flow.
+
+For the local prototype baseline, the recommended path after cloning is:
+
+```bash
+./run.sh up
+```
+
+That command checks or installs local requirements, runs pytest smoke tests, rebuilds the local DuckDB starter database, and brings the local Streamlit prototype up.
+
+### Why Add a DuckDB + Streamlit Baseline?
+
+A lightweight DuckDB + Streamlit baseline helps future contributors start from a practical local prototype instead of starting from zero. The intent is to complement the current architecture by adding:
+
+- a small local analytical store
+- a repeatable loader from current curated outputs
+- starter views and queries for QA and exploration
+- and a minimal Streamlit shell for local interactive analysis
+
+### What This Baseline Is
+
+This baseline is intended to be:
+
+- local-first
+- additive
+- lightweight
+- easy to rebuild from current outputs
+- and suitable for extension by future contributors
+
+### What This Baseline Is Not
+
+This baseline is not:
+
+- a replacement for the current GitHub Pages public dashboard
+- a full production deployment
+- a complete migration away from the notebook-first workflow
+- or a claim that all project outputs are already normalized into a database schema
+
+### Starter Scope in This Repo
+
+- Local DuckDB convention: `data/local/duckdb/spring2026daen_baseline.duckdb`
+- Loader script: `scripts/build_duckdb_baseline.py`
+- Starter local app: `app/streamlit_app.py`
+- Sample SQL: `sql/duckdb_baseline_queries.sql`
+- Assumptions and open questions: `docs/planning/duckdb_streamlit_baseline_notes.md`
+
+Current baseline ingestion targets the most stable local curated outputs currently available:
+
+- `JupyterNotebooks/outputs/index_pipeline/30_scoring/municipio_indices_scored.csv`
+- `JupyterNotebooks/outputs/index_pipeline/50_products/priority_actions.csv`
+- `JupyterNotebooks/outputs/index_pipeline/01_ingest/flood_station_latest_features.csv`
+- `JupyterNotebooks/outputs/index_pipeline/01_ingest/nws_alerts_enriched.csv`
+- `outputs/index_pipeline/15_terrain/municipio_terrain_features.parquet` or `.csv`
+- `outputs/noaa_pr/noaa_pr_station_summary.csv`
+
+GeoJSON outputs are inventoried for future map-friendly extensions but are not yet loaded into a spatial database schema.
+
+### Public vs Local Prototype
+
+- Public today: the current GitHub Pages dashboard flow remains the official public-facing surface.
+- Local/internal prototype: the DuckDB database and Streamlit app are intended for local analytical exploration, QA, and future extension.
+
+### Quickstart
+
+1. Clone the repository.
+2. Run `./run.sh up`.
+3. Let the runner create or reuse `.venv`, install requirements if needed, run pytest smoke tests, build the local DuckDB baseline, and launch Streamlit.
+4. Use `./run.sh` later for the interactive menu, status checks, rebuilds, queries, optimization, and clean stop actions.
+
+```bash
+./run.sh up
+```
+
+For a guided local menu, use:
+
+```bash
+./run.sh
+```
+
+If you want the underlying steps directly, they are still available:
+
+```bash
+./run.sh install
+./run.sh test
+./run.sh build
+./run.sh start
+./run.sh stop
+```
+
+### Known Gaps and Next Extensions
+
+- The baseline currently focuses on a small set of stable outputs rather than the full notebook estate.
+- The app is a local prototype shell, not a production deployment target.
+- GeoJSON sources are inventoried rather than modeled spatially in DuckDB.
+- Natural next candidates for expansion include age, transport/no-vehicle, housing fragility, income/poverty, and future terrain pilot outputs.
+
+## Index Formula Overview (`JupyterNotebooks/index_pipeline/`)
 
 This section documents the implemented formulas used in the staged pipeline at `JupyterNotebooks/index_pipeline/`, including the rationale, operational use, and output artifact.
 
