@@ -19,6 +19,9 @@ This folder is organized by category to keep research, design, planning, and ope
 
 - `docs/planning/`
   - Project planning documents, scope notes, and outlines.
+  - Current files include:
+    - `docs/planning/duckdb_streamlit_baseline_notes.md`
+    - `docs/planning/local_workbench_gui_slide_deck.md`
 
 - `docs/meetings/`
   - Publishable meeting minutes and session records approved for repo inclusion.
