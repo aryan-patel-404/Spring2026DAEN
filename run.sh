@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Local DuckDB + Streamlit prototype runner for Spring2026DAEN.
+# Local DuckDB + Streamlit workbench runner for Spring2026DAEN.
 # This is an additive, local-first helper. It does not replace the
 # notebook-first workflow or the existing GitHub Pages dashboard.
 #
@@ -12,7 +12,7 @@ PID_FILE="${ROOT_DIR}/.streamlit_local.pid"
 DEFAULT_VENV="${ROOT_DIR}/.venv"
 DB_PATH="${ROOT_DIR}/data/local/duckdb/spring2026daen_baseline.duckdb"
 BUILD_SUMMARY_PATH="${ROOT_DIR}/data/local/duckdb/duckdb_baseline_build_summary.json"
-PYTEST_TARGET="${ROOT_DIR}/tests/test_local_prototype_baseline.py"
+PYTEST_TARGET="${ROOT_DIR}/tests"
 STREAMLIT_PORT="${STREAMLIT_PORT:-8501}"
 STREAMLIT_URL="http://127.0.0.1:${STREAMLIT_PORT}"
 MAX_LOG_BYTES=1048576
@@ -154,7 +154,7 @@ ensure_venv() {
 python_import_status() {
   "$(python_bin)" - <<'PY'
 import importlib.util
-mods = ["duckdb", "pandas", "pyarrow", "streamlit", "pytest"]
+mods = ["duckdb", "pandas", "pyarrow", "streamlit", "pytest", "yaml"]
 for mod in mods:
     print(f"{mod}:{1 if importlib.util.find_spec(mod) else 0}")
 PY
@@ -166,7 +166,7 @@ requirements_ready() {
 import importlib.util
 import sys
 
-mods = ["duckdb", "pandas", "pyarrow", "streamlit", "pytest"]
+mods = ["duckdb", "pandas", "pyarrow", "streamlit", "pytest", "yaml"]
 missing = [mod for mod in mods if importlib.util.find_spec(mod) is None]
 if missing:
     print(",".join(missing))
@@ -194,7 +194,7 @@ print_status_row() {
 }
 
 show_status() {
-  log "Gathering local prototype status"
+  log "Gathering local workbench status"
 
   local expected_outputs=(
     "${ROOT_DIR}/JupyterNotebooks/outputs/index_pipeline/30_scoring/municipio_indices_scored.csv"
@@ -376,14 +376,14 @@ PY
 run_smoke_tests() {
   log "Running local DuckDB + Streamlit smoke tests"
   ensure_requirements_ready
-  [[ -f "${PYTEST_TARGET}" ]] || die "Pytest target not found at ${PYTEST_TARGET}"
+  [[ -e "${PYTEST_TARGET}" ]] || die "Pytest target not found at ${PYTEST_TARGET}"
   python -m pytest -q "${PYTEST_TARGET}"
   log "Smoke tests passed"
 }
 
 bring_stack_up() {
   local total_steps=4
-  log "Starting local prototype stack-up workflow"
+  log "Starting local workbench stack-up workflow"
   log "Step 1/${total_steps}: checking or installing requirements"
   ensure_requirements_ready
   log "Step 2/${total_steps}: running pytest smoke tests"
@@ -547,7 +547,7 @@ rotate_log_if_needed() {
 
 main_menu() {
   while true; do
-    printf "\n${C_BOLD}Spring2026DAEN Local Prototype Menu${C_RESET}\n"
+    printf "\n${C_BOLD}PR Hazard and Readiness Analysis Workbench Menu${C_RESET}\n"
     echo "  1. Bring local stack up (recommended)"
     echo "  2. Status check"
     echo "  3. Install/update local baseline dependencies"

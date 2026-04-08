@@ -20,8 +20,8 @@ Deliver an integrated decision-support + data Science/Data Analytics prototype f
 - Demo-ready storytelling for stakeholders
 
 **Quick Local Start**
-- After cloning, run `./run.sh up` for the fastest local prototype startup path.
-- That workflow creates or reuses a repo-local Python virtual environment at `.venv`, checks and installs the baseline requirements, runs pytest smoke tests, rebuilds the local DuckDB baseline, and starts the local Streamlit prototype.
+- After cloning, run `./run.sh up` for the fastest local workbench startup path.
+- That workflow creates or reuses a repo-local Python virtual environment at `.venv`, checks and installs the baseline requirements, runs pytest smoke tests, rebuilds the local DuckDB baseline, and starts the local Streamlit workbench.
 - `./run.sh` without arguments opens an interactive menu for the same workflow plus status, query, and stop utilities.
 - After startup, the runner can offer to open the local app in the default browser automatically. Inside the Streamlit app, a `Quit Local App` button is available for clean local shutdown.
 - To stop the local app cleanly and free port `8501` for other tools, run `./run.sh stop`. If you need a different port, set `STREAMLIT_PORT` before launch.
@@ -54,7 +54,7 @@ Deliver an integrated decision-support + data Science/Data Analytics prototype f
 ├── .github/workflows/                  # GitHub Pages deployment workflow
 ├── config/                             # Versioned executable configuration
 ├── data/                               # Local/project data staging
-│   └── local/duckdb/                   # Local DuckDB starter baseline artifacts
+│   └── local/duckdb/                   # Local DuckDB workbench artifacts
 ├── docs/
 │   ├── meetings/                       # Approved publishable meeting records
 │   ├── planning/                       # Scope, requirements, and planning docs
@@ -96,32 +96,43 @@ For a docs-only breakdown, see `docs/README.md`.
 - Current automation focuses on source discovery, staging-folder setup, support for `.zip` / `.gdb` / `.img` local inputs, and land-cover profile auto-detection.
 - Intended outputs: `outputs/index_pipeline/15_terrain/municipio_terrain_features.{csv,parquet,geojson}` plus run metadata and a local data dictionary.
 
-## DuckDB + Streamlit Starter Baseline (Local Prototype)
+## Social Adjustment Factors v1
+
+- `config/social_adjustments_v1.yaml` versions optional social-adjustment settings. The current default-on overlay adds age-sensitive adjustment points using children under 5 and adults 65+.
+- `scripts/factors/social_adjustments.py` is the shared background module used by canonical notebooks and the local workbench.
+- `JupyterNotebooks/census-risk-features-pr.ipynb` now pulls the required ACS age fields into the canonical census feature outputs instead of relying on a detached notebook copy.
+- `JupyterNotebooks/index_pipeline/02_feature_engineering/10_build_exposure_vulnerability_features.ipynb` applies the configured overlay and writes:
+  - `JupyterNotebooks/outputs/index_pipeline/10_features/municipio_exposure_vulnerability_features.csv`
+  - `JupyterNotebooks/outputs/index_pipeline/10_features/municipio_adjustment_factors.csv`
+  - `JupyterNotebooks/outputs/index_pipeline/10_features/adjustment_factor_reference.csv`
+- The local workbench surfaces the same factor reference and municipio adjustment outputs through DuckDB so the adjustment logic is inspectable outside the notebooks.
+
+## PR Hazard and Readiness Analysis Workbench (Local-Only Prototype)
 
 ### Current State
 
 This repository is currently not centered on a formal DuckDB database layer or a deployed Streamlit application. The current MVP remains notebook-first, local-first by default, driven by curated public-data ingest and staged analytics notebooks, and publicly surfaced through the existing GitHub Pages dashboard flow.
 
-For the local prototype baseline, the recommended path after cloning is:
+For the local workbench, the recommended path after cloning is:
 
 ```bash
 ./run.sh up
 ```
 
-That command checks or installs local requirements, runs pytest smoke tests, rebuilds the local DuckDB starter database, and brings the local Streamlit prototype up.
+That command checks or installs local requirements, runs pytest smoke tests, rebuilds the local DuckDB starter database, and brings the local Streamlit workbench up.
 
-### Why Add a DuckDB + Streamlit Baseline?
+### Why Add This Workbench?
 
-A lightweight DuckDB + Streamlit baseline helps future contributors start from a practical local prototype instead of starting from zero. The intent is to complement the current architecture by adding:
+A lightweight DuckDB + Streamlit workbench helps future contributors start from a practical local analysis surface instead of starting from zero. The intent is to complement the current architecture by adding:
 
 - a small local analytical store
 - a repeatable loader from current curated outputs
 - starter views and queries for QA and exploration
 - and a minimal Streamlit shell for local interactive analysis
 
-### What This Baseline Is
+### What This Workbench Is
 
-This baseline is intended to be:
+This workbench is intended to be:
 
 - local-first
 - additive
@@ -129,9 +140,9 @@ This baseline is intended to be:
 - easy to rebuild from current outputs
 - and suitable for extension by future contributors
 
-### What This Baseline Is Not
+### What This Workbench Is Not
 
-This baseline is not:
+This workbench is not:
 
 - a replacement for the current GitHub Pages public dashboard
 - a full production deployment
@@ -157,16 +168,16 @@ Current baseline ingestion targets the most stable local curated outputs current
 
 GeoJSON outputs are inventoried for future map-friendly extensions but are not yet loaded into a spatial database schema.
 
-### Public vs Local Prototype
+### Public vs Local Workbench
 
 - Public today: the current GitHub Pages dashboard flow remains the official public-facing surface.
-- Local/internal prototype: the DuckDB database and Streamlit app are intended for local analytical exploration, QA, and future extension.
+- Local/internal workbench: the DuckDB database and Streamlit app are intended for local analytical exploration, QA, and future extension.
 
 ### Quickstart
 
 1. Clone the repository.
 2. Run `./run.sh up`.
-3. Let the runner create or reuse `.venv`, install requirements if needed, run pytest smoke tests, build the local DuckDB baseline, and launch Streamlit.
+3. Let the runner create or reuse `.venv`, install requirements if needed, run pytest smoke tests, build the local DuckDB baseline, and launch the local workbench.
 4. Use `./run.sh` later for the interactive menu, status checks, rebuilds, queries, optimization, and clean stop actions.
 
 ```bash
@@ -192,7 +203,7 @@ If you want the underlying steps directly, they are still available:
 ### Known Gaps and Next Extensions
 
 - The baseline currently focuses on a small set of stable outputs rather than the full notebook estate.
-- The app is a local prototype shell, not a production deployment target.
+- The app is a local workbench shell, not a production deployment target.
 - GeoJSON sources are inventoried rather than modeled spatially in DuckDB.
 - Natural next candidates for expansion include age, transport/no-vehicle, housing fragility, income/poverty, and future terrain pilot outputs.
 
@@ -242,25 +253,31 @@ This section documents the implemented formulas used in the staged pipeline at `
 - **Use:** `02_feature_engineering/10_build_exposure_vulnerability_features.ipynb`.
 - **Outcome:** `vulnerability_score` used directly in risk and priority calculations.
 
-8. **Resilience baseline proxy**
+8. **Optional age adjustment overlay**
+- **Formula:** `score_age_vulnerability = 0.4*score_child_vulnerability + 0.6*score_elderly_vulnerability`; `age_adjustment_points = score_age_vulnerability/100 * 12`; `vulnerability_score_adjusted = clip(vulnerability_score_base + age_adjustment_points, 0, 100)`
+- **Rationale:** Add an explainable overlay for age-sensitive populations without rewriting the core staged scoring architecture.
+- **Use:** `config/social_adjustments_v1.yaml` plus `scripts/factors/social_adjustments.py`, applied in `02_feature_engineering/10_build_exposure_vulnerability_features.ipynb`.
+- **Outcome:** Transparent base-vs-adjusted vulnerability fields and a separate municipio adjustment table.
+
+9. **Resilience baseline proxy**
 - **Formula:** `resilience_capacity_score = 0.45*income_capacity_score + 0.30*(100 - transport_constraint_score) + 0.25*(100 - housing_fragility_score)`
 - **Rationale:** Estimate local capacity to absorb and recover from disruption.
 - **Use:** `02_feature_engineering/10_build_exposure_vulnerability_features.ipynb`.
 - **Outcome:** `resilience_capacity_score` feeding `resilience_index`, readiness, and recovery formulas.
 
-9. **Municipio flood aggregation (distance-weighted + local override)**
+10. **Municipio flood aggregation (distance-weighted + local override)**
 - **Formula:** `w = exp(-distance_km / 25.0)`; `weighted_flood = weighted_average(flood_hazard_final, w)`; `flood_hazard_muni = max(weighted_flood, local_max_within_12km, nws_global_alert_score)`
 - **Rationale:** Blend nearby station influence while preserving worst-case local conditions and active alerts.
 - **Use:** `02_feature_engineering/20_build_municipio_hazard_features.ipynb`.
 - **Outcome:** `flood_hazard_muni` per municipio.
 
-10. **Earthquake municipio hazard proxy**
+11. **Earthquake municipio hazard proxy**
 - **Formula:** `depth_factor = 1 / (1 + depth_km/70)`; `recency_factor = exp(-age_hours/168)`; `intensity_raw = magnitude / log1p(distance_km) * depth_factor * recency_factor`; `earthquake_hazard_score = robust_to_0_100(intensity_raw)`
 - **Rationale:** Prioritize stronger, closer, shallower, and more recent events.
 - **Use:** `02_feature_engineering/20_build_municipio_hazard_features.ipynb`.
 - **Outcome:** `earthquake_hazard_score`; then `hazard_combined = max(flood_hazard_muni, earthquake_hazard_score)`.
 
-11. **Risk index (multiplicative core)**
+12. **Risk index (multiplicative core)**
 - **Formula:** `risk_index_raw = (hazard_combined/100) * (exposure_score/100) * (vulnerability_score/100) * 100`
 - **Rationale:** High risk emerges when hazard, exposure, and vulnerability are jointly elevated.
 - **Use:** `03_scoring/30_score_operational_indices.ipynb`.
